@@ -12,9 +12,10 @@ form.addEventListener("submit", handleSubmit);
 btnLoadMore.addEventListener("click", handleLoadMore);
 
 let userValue;
-let page = 1;
+let page;
 
 function handleSubmit(event) {
+    hideLoadMoreButton();
     iziToast.destroy();
     clearGallery();
     showLoader();
@@ -34,8 +35,7 @@ function handleSubmit(event) {
             if (response.data.hits.length) {
                 const arrImg = response.data.hits;
                 createGallery(arrImg);
-                
-                if (page < response.data.total / response.config.params.per_page) {
+                if (page < response.data.totalHits / response.config.params.per_page) {
                     showLoadMoreButton();
                 }
                 return;
@@ -70,7 +70,9 @@ async function handleLoadMore() {
         hideLoadMoreButton();
         showLoader();
         const response = await getImagesByQuery(userValue, page);
-        if (page < response.data.total / response.config.params.per_page) {
+        const totalPages = response.data.totalHits / response.config.params.per_page;
+
+        if (response.data.hits.length) {
             createGallery(response.data.hits);
             const card = document.querySelector(".card");
             const cardHeight = card.getBoundingClientRect().height;
@@ -78,8 +80,11 @@ async function handleLoadMore() {
                 top: cardHeight * 2,
                 behavior: "smooth"
             });
+
             hideLoader();
-            showLoadMoreButton();
+            if (page < totalPages) {
+                showLoadMoreButton();
+            }
             return;
         }
         hideLoader();
@@ -92,6 +97,7 @@ async function handleLoadMore() {
             progressBarColor: '#fff'
         });
     } catch (error) {
+        hideLoader();
         iziToast.show({
             message: error.message,
             backgroundColor: '#EF4040',
